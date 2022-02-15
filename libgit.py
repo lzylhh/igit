@@ -12,17 +12,17 @@ li = set()
 commit_list = set()
 def get_all_objs(repo_name):
 	all_objs = "git rev-list --objects --no-object-names --all"
-	result = set()
+	result = []
 	for line in os.popen(all_objs).readlines():
 	# if repo.get(str(line[:-1])).type == types["OBJ_BLOB"]:
-		result.add(str(line[:-1]))
+		result.append(str(line[:-1]))
 	return result
 def get_all_commit(repo_name):
 	all_commits = "git log --pretty=format:\"%H\" --all"
-	result = set()
+	result = []
 	
 	for line in os.popen(all_commits).readlines():
-		result.add(str(line[:-1]))
+		result.append(str(line[:-1]))
 	return result
 def Binary(h):
 	result = ''
@@ -136,51 +136,61 @@ def walk_commit_tree(this_commit):
 	repo = Repository('.git')
 	if this_commit not in li:
 		li.add(this_commit)
-	data = obj_data(repo.get(this_commit))	
+	# data = obj_data(repo.get(this_commit))	
 	queue = [repo.get(this_commit).tree]
 	while len(queue) > 0:
 		this_tree = queue.pop(0)
 		if str(this_tree.id) in li:
 			continue
 		li.add(str(this_tree.id))
-		data += obj_data(this_tree)
+		# data += obj_data(this_tree)
 		for t in this_tree:
 			if str(t.id) in li:
 				continue
 			if t.type == types["OBJ_BLOB"]:
 				li.add(str(t.id))
-				data += obj_data(t)
+				# data += obj_data(t)
 			if t.type == types["OBJ_TREE"]:
 				queue.append(t)
-	return data
+
 
 def pack_by_commit(commit_list, repo_name, single_size = 0):
 	global li
-	lenth = 0
-	data = b''
+	l = len(commit_list)
+	num = 0
 	for commit in commit_list:
-		if len(data) >= single_size:
-			new_pack_By_data(data, len(li))
+		num += 1
+		print("\rcommit：%.2f%%" %(float(num/l*100)),end=' ')
+		if len(li) >= 310000:
+			new_pack_By_list(li, repo_name)
 			li = set()
-			data = walk_commit_tree(commit)
+			print(num)
+			walk_commit_tree(commit)
 			continue
-		data += walk_commit_tree(commit)
-	new_pack_By_data(data, len(li))
+		walk_commit_tree(commit)
+
+
+		# if num % 20000 == 0:			
+		# 	new_pack_By_list(li, repo_name)
+		# 	break
+	# new_pack_By_list(li, repo_name)
 
 
 
 
 		
-pack = "C:\\Users\\dell\\Desktop\\neo4j"
+pack = "linux"
 os.chdir(pack)
 
 
 # for t in repo.get("d6b0236bd288faafd2e879fcb6677c34544322ab").tree:
 # 	print(t.name)
 
-
 commit_list = get_all_commit(pack)
+
 pack_by_commit(commit_list, pack, 1<<30)
+
+
 
 
 # li = get_all_objs(pack)
