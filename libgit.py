@@ -161,19 +161,20 @@ def pack_by_commit(commit_list, repo_name, single_size = 0):
 	for commit in commit_list:
 		num += 1
 		print("\rcommit：%.2f%%" %(float(num/l*100)),end=' ')
-		if len(li) >= 310000:
-			new_pack_By_list(li, repo_name)
-			li = set()
-			print(num)
-			walk_commit_tree(commit)
-			continue
+		# if len(li) >= 310000:
+		# 	new_pack_By_list(li, repo_name)
+		# 	li = set()
+		# 	print(num)
+		# 	walk_commit_tree(commit)
+		# 	continue
 		walk_commit_tree(commit)
 
 
-		# if num % 20000 == 0:			
-		# 	new_pack_By_list(li, repo_name)
-		# 	break
+		if num % 20000 == 0:			
+			new_pack_By_list(li, repo_name)
+			break
 	# new_pack_By_list(li, repo_name)
+
 
 
 
