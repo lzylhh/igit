@@ -7,6 +7,7 @@ import struct
 import os
 import hashlib
 import time
+import json
 def get_all_objs(repo_name):
 	all_objs = "git rev-list --objects --no-object-names --all"
 	result = []
@@ -14,8 +15,8 @@ def get_all_objs(repo_name):
 	# if repo.get(str(line[:-1])).type == types["OBJ_BLOB"]:
 		result.append(str(line[:-1]))
 	return result
-
-os.chdir("neo4j")
+path = "C:\\Users\\dell\\Desktop\\g6"
+os.chdir(path)
 repo = Repository('.git')
 hash_to_path = {}
 path_to_hash = {}
@@ -35,16 +36,16 @@ def read_pack():
 	data = {}
 	pack_order = "git verify-pack -v "
 	for root,dirs,files in os.walk(".git/objects/pack"):
-		num = 0
-		l = len(files)
 		for fn in files:
-			num += 1
-			print("\rwriting：%.2f%%" %(float(num/l*100)),end='')
 			file_name = os.path.join(root, fn)
 			if fn.endswith(".idx"):
 				data[fn] = {}
-				for line in os.popen(pack_order + file_name).readlines():
-					# print(line)
+				num = 0
+				lines = os.popen(pack_order + file_name).readlines()
+				l = len(lines)
+				for line in lines:
+					num += 1 
+					print("\rreading：%.2f%%" %(float(num/l*100)),end='')
 					if line.startswith("non"):
 						break
 					one = line.split()
@@ -52,6 +53,7 @@ def read_pack():
 						data[fn][one[0]] = [one[1], int(one[2])]
 					elif len(one) == 7:
 						data[fn][one[0]] = [one[1], int(one[2]), int(one[5]), one[6]]
+				print()
 	return data
 # for i in data:
 # 	for j in data[i]:
@@ -63,7 +65,6 @@ def walk_commit_get_path(this_commit):
 	global hash_to_path
 	global path_to_hash
 	global repo
-	print(this_commit)
 	queue = [[repo.get(this_commit).tree, ""]]
 	while len(queue) > 0:
 		two = queue.pop(0)
@@ -81,10 +82,18 @@ def walk_commit_get_path(this_commit):
 			if t.type == GIT_OBJ_TREE:
 				queue.append([t, path])
 commits = get_all_commit("")
+l = len(commits)
+print(str(l) + " commits start scanning:")
+num = 0 
 for c in commits:
 	walk_commit_get_path(c)
-num = 0
-for i in hash_to_path:
 	num += 1
-	print(hash_to_path[i])
-print(num)
+	print("\rscanning：%.2f%%" %(float(num/l*100)),end='')
+print()
+for i in hash_to_path:
+	hash_to_path[i] = list(hash_to_path[i])
+pack_data  = read_pack()
+with open(path + "/.git/objects/pack/pack_data.json", "w") as f:
+	json.dump(pack_data,f)
+with open(path + "/.git/objects/pack/hash_to_path.json", "w") as f:
+	json.dump(hash_to_path,f)
