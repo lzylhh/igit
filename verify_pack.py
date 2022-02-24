@@ -8,6 +8,10 @@ import os
 import hashlib
 import time
 import json
+import timeit
+
+path = "C:\\Users\\dell\\Desktop\\test"#修改包路径即可，该版本适配windows
+
 def get_all_objs(repo_name):
 	all_objs = "git rev-list --objects --no-object-names --all"
 	result = []
@@ -15,12 +19,14 @@ def get_all_objs(repo_name):
 	# if repo.get(str(line[:-1])).type == types["OBJ_BLOB"]:
 		result.append(str(line[:-1]))
 	return result
-path = "C:\\Users\\dell\\Desktop\\g6"
+
 os.chdir(path)
 repo = Repository('.git')
 hash_to_path = {}
 path_to_hash = {}
 repo = Repository('.git')
+def get_one(hash):
+	return repo.get(hash).read_raw()
 for obj in get_all_objs(''):
 	hash_to_path[obj] = set()
 
@@ -35,7 +41,7 @@ def get_all_commit(repo_name):
 def read_pack():
 	data = {}
 	pack_order = "git verify-pack -v "
-	for root,dirs,files in os.walk(".git/objects/pack"):
+	for root,dirs,files in os.walk(".git\\objects\\pack"):
 		for fn in files:
 			file_name = os.path.join(root, fn)
 			if fn.endswith(".idx"):
@@ -53,6 +59,8 @@ def read_pack():
 						data[fn][one[0]] = [one[1], int(one[2])]
 					elif len(one) == 7:
 						data[fn][one[0]] = [one[1], int(one[2]), int(one[5]), one[6]]
+					# data[fn][one[0]].append(timeit.timeit(stmt=lambda:get_one(obj), number=1))
+
 				print()
 	return data
 # for i in data:
@@ -78,7 +86,10 @@ def walk_commit_get_path(this_commit):
 				else:
 					path = t.name
 			key = str(t.id)
-			hash_to_path[key].add(path)
+			try:
+				hash_to_path[key].add(path)
+			except:
+				print("continue")
 			if t.type == GIT_OBJ_TREE:
 				queue.append([t, path])
 commits = get_all_commit("")
@@ -93,7 +104,7 @@ print()
 for i in hash_to_path:
 	hash_to_path[i] = list(hash_to_path[i])
 pack_data  = read_pack()
-with open(path + "/.git/objects/pack/pack_data.json", "w") as f:
+with open(".git\\objects\\pack\\pack_data.json", "w") as f:
 	json.dump(pack_data,f)
-with open(path + "/.git/objects/pack/hash_to_path.json", "w") as f:
+with open(".git\\objects\\pack\\hash_to_path.json", "w") as f:
 	json.dump(hash_to_path,f)
