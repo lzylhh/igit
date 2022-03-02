@@ -10,7 +10,7 @@ import time
 import json
 import timeit
 
-path = "C:\\Users\\dell\\Desktop\\test"#修改包路径即可，该版本适配windows
+path = "C:\\Users\\dell\\Desktop\\igit"#修改包路径即可，该版本适配windows
 
 def get_all_objs(repo_name):
 	all_objs = "git rev-list --objects --no-object-names --all"
@@ -37,6 +37,66 @@ def get_all_commit(repo_name):
 	for line in os.popen(all_commits).readlines():
 		result.append(str(line[:-1]))
 	return result
+def read_pack_file(name,obj_size , offset_in_packfile):
+	f = open(name, 'rb')
+	f.seek(offset_in_packfile, 0)
+	b = f.read(1)
+	typ = ((b[0] & 0x70)>>4)
+	size = b[0] & 0x0f
+	while((b[0] & 0x80) != 0):
+		b = f.read(1)
+	#以上是head
+	if typ == 6:
+		b = f.read(1)
+		re = b[0] & 0x7f
+		cishu = 0
+		while((b[0] & 0x80) != 0):
+			b = f.read(1)
+			cishu += 1
+			re = ((b[0] & 0x7f) << (cishu * 7)) + re
+			re += (2**(7*cishu))
+		print(re)
+	elif typ == 7:
+		base_sha1 = f.read(20)
+	#delta data
+	num = 0
+	while(True):
+		num += 1
+		b = f.read(1)
+		if f.tell() >= offset_in_packfile + obj_size:
+			break
+		
+		tag = (b[0] & 0x80)>>7
+		if int(tag) == 1:
+			single_copy_num = 0
+			chizi = 0x01
+			for i in range(7):
+				if b[0] & chizi:
+					single_copy_num += 1
+				chizi <<= 1
+			# print(single_copy_num)
+			for i in range(single_copy_num):
+				b = f.read(1)
+				re = b[0] & 0x7f
+				cishu = 0
+				while((b[0] & 0x80) != 0):
+					b = f.read(1)
+					cishu += 1
+					re = ((b[0] & 0x7f) << (cishu * 7)) + re
+				# print(cishu)
+			for i in range(single_copy_num):
+				b = f.read(1)
+				re = b[0] & 0x7f
+				cishu = 0
+				while((b[0] & 0x80) != 0):
+					b = f.read(1)
+					cishu += 1
+					re = ((b[0] & 0x7f) << (cishu * 7)) + re
+				# print(re)
+				# print(cishu)
+		elif int(tag) == 0:
+			data_size = int(tag&0x7f)
+			data = f.seek(data_size, 1)
 
 def read_pack():
 	data = {}
@@ -55,10 +115,16 @@ def read_pack():
 					if line.startswith("non"):
 						break
 					one = line.split()
+					# print(one)
 					if len(one) == 5:
 						data[fn][one[0]] = [one[1], int(one[2])]
 					elif len(one) == 7:
+
 						data[fn][one[0]] = [one[1], int(one[2]), int(one[5]), one[6]]
+						size_in_packfile = int(one[3])
+						offset_in_packfile = int(one[4])
+						read_pack_file(file_name[:-4] + ".pack", size_in_packfile, offset_in_packfile)
+
 					# data[fn][one[0]].append(timeit.timeit(stmt=lambda:get_one(obj), number=1))
 
 				print()
