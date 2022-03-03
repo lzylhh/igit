@@ -37,7 +37,7 @@ def get_all_commit(repo_name):
 	for line in os.popen(all_commits).readlines():
 		result.append(str(line[:-1]))
 	return result
-def read_pack_file(name,obj_size , offset_in_packfile):
+def read_pack_file(name,obj_size , offset_in_packfile, base_hash):
 	f = open(name, 'rb')
 	f.seek(offset_in_packfile, 0)
 	b = f.read(1)
@@ -52,51 +52,75 @@ def read_pack_file(name,obj_size , offset_in_packfile):
 		cishu = 0
 		while((b[0] & 0x80) != 0):
 			b = f.read(1)
-			cishu += 1
-			re = ((b[0] & 0x7f) << (cishu * 7)) + re
-			re += (2**(7*cishu))
-		print(re)
+			re += 1
+			re <<= 7
+			re += (b[0] & 0x7f)
+		# print(re)#base nagetive offset
 	elif typ == 7:
 		base_sha1 = f.read(20)
 	#delta data
+	#先读取base size 和 size of the object to be reconstructed
+	delta_data = f.read(obj_size - (f.tell() - offset_in_packfile))
+	delta_data = zlib.decompress(delta_data)
+	point = -1
+	for i in range(2):
+		point += 1
+		b = delta_data[point]
+		cishu = 0
+		re = b & 0x7f
+		while((b & 0x80) != 0):
+			point += 1
+			b = delta_data[point]
+			cishu += 1
+			re += ((b & 0x7f) << (cishu * 7)) 
+		# print(re)
+	#读取恢复指令
+	base_data = repo.get(base_hash).read_raw()
+	now_data = bytes()
 	num = 0
 	while(True):
 		num += 1
-		b = f.read(1)
-		if f.tell() >= offset_in_packfile + obj_size:
+
+		point += 1
+		if point >= len(delta_data):
 			break
-		
-		tag = (b[0] & 0x80)>>7
-		if int(tag) == 1:
-			single_copy_num = 0
+
+		b = delta_data[point]
+		tag = b & 0x80
+		#copy指令
+		if tag:
+			flag = b
+
+			offset = 0
+			size = 0
 			chizi = 0x01
-			for i in range(7):
-				if b[0] & chizi:
-					single_copy_num += 1
+			for i in range(4):
+				if flag & chizi:
+
+					point += 1
+					b = delta_data[point]
+
+					offset += b<<(8*i)				
 				chizi <<= 1
-			# print(single_copy_num)
-			for i in range(single_copy_num):
-				b = f.read(1)
-				re = b[0] & 0x7f
-				cishu = 0
-				while((b[0] & 0x80) != 0):
-					b = f.read(1)
-					cishu += 1
-					re = ((b[0] & 0x7f) << (cishu * 7)) + re
-				# print(cishu)
-			for i in range(single_copy_num):
-				b = f.read(1)
-				re = b[0] & 0x7f
-				cishu = 0
-				while((b[0] & 0x80) != 0):
-					b = f.read(1)
-					cishu += 1
-					re = ((b[0] & 0x7f) << (cishu * 7)) + re
-				# print(re)
-				# print(cishu)
-		elif int(tag) == 0:
-			data_size = int(tag&0x7f)
-			data = f.seek(data_size, 1)
+			for i in range(3):
+				if flag & chizi:
+					point += 1
+					b = delta_data[point]
+
+					size += b<<(8*i)				
+				chizi <<= 1
+			now_data += base_data[offset:(offset+size)]
+			print(offset)
+			print(size)
+		#新数据指令
+		else:
+			data_size = b&0x7f
+			# print(data_size)
+			data = delta_data[(point+1):(point+data_size+1)]
+			now_data += data
+			# print(data.decode('utf-8'))
+			point += data_size
+	return now_data
 
 def read_pack():
 	data = {}
@@ -116,6 +140,9 @@ def read_pack():
 						break
 					one = line.split()
 					# print(one)
+					# print(one[0])
+					# print(one[3])
+					# print(one[4])
 					if len(one) == 5:
 						data[fn][one[0]] = [one[1], int(one[2])]
 					elif len(one) == 7:
@@ -123,8 +150,9 @@ def read_pack():
 						data[fn][one[0]] = [one[1], int(one[2]), int(one[5]), one[6]]
 						size_in_packfile = int(one[3])
 						offset_in_packfile = int(one[4])
-						read_pack_file(file_name[:-4] + ".pack", size_in_packfile, offset_in_packfile)
-
+						now_data = read_pack_file(file_name[:-4] + ".pack", size_in_packfile, offset_in_packfile, one[6])
+						ff= open("huanyuan.py", "wb")
+						ff.write(now_data)
 					# data[fn][one[0]].append(timeit.timeit(stmt=lambda:get_one(obj), number=1))
 
 				print()
