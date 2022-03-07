@@ -35,7 +35,7 @@ def get_one(hash):
 	return repo.get(hash).read_raw()
 for obj in get_all_objs(''):
 	hash_to_path[obj] = set()
-
+#diff测试
 def get_all_commit(repo_name):
 	all_commits = "git log --pretty=format:\"%H\" --all"
 	result = []
@@ -121,7 +121,6 @@ def read_pack_file(name,obj_size , offset_in_packfile, base_hash):
 		else:
 			num2 += 1
 			data_size = b&0x7f
-			# print(data_size)
 			data = delta_data[(point+1):(point+data_size+1)]
 			# now_data += data
 			# print(data.decode('utf-8'))
@@ -164,7 +163,7 @@ def read_pack():
 					# data[fn][one[0]].append(timeit.timeit(stmt=lambda:get_one(obj), number=1))
 				print()
 	return data
-
+#diff测试
 def walk_commit_get_path(this_commit):
 	global hash_to_path
 	global path_to_hash
@@ -188,6 +187,7 @@ def walk_commit_get_path(this_commit):
 				print("continue")
 			if t.type == GIT_OBJ_TREE:
 				queue.append([t, path])
+#diff测试
 commits = get_all_commit("")
 l = len(commits)
 print(str(l) + " commits start scanning:")
@@ -204,4 +204,3 @@ with open(".git\\objects\\pack\\pack_data.json", "w") as f:
 	json.dump(pack_data,f)
 with open(".git\\objects\\pack\\hash_to_path.json", "w") as f:
 	json.dump(hash_to_path,f)
-#diff测试
