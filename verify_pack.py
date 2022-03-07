@@ -43,6 +43,7 @@ def get_all_commit(repo_name):
 	for line in os.popen(all_commits).readlines():
 		result.append(str(line[:-1]))
 	return result
+#用于diff测试增加一行
 def read_pack_file(name,obj_size , offset_in_packfile, base_hash):
 	f = open(name, 'rb')
 	f.seek(offset_in_packfile, 0)
