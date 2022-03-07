@@ -43,7 +43,6 @@ def get_all_commit(repo_name):
 	for line in os.popen(all_commits).readlines():
 		result.append(str(line[:-1]))
 	return result
-#用于diff测试增加一行
 def read_pack_file(name,obj_size , offset_in_packfile, base_hash):
 	f = open(name, 'rb')
 	f.seek(offset_in_packfile, 0)
@@ -80,7 +79,6 @@ def read_pack_file(name,obj_size , offset_in_packfile, base_hash):
 			b = delta_data[point]
 			cishu += 1
 			re += ((b & 0x7f) << (cishu * 7)) 
-		# print(re)
 	#读取恢复指令
 	# base_data = repo.get(base_hash).read_raw()
 	# now_data = bytes()
@@ -119,8 +117,6 @@ def read_pack_file(name,obj_size , offset_in_packfile, base_hash):
 					size += b<<(8*i)				
 				chizi <<= 1
 			# now_data += base_data[offset:(offset+size)]
-			# print(offset)
-			# print(size)
 		#新数据指令
 		else:
 			num2 += 1
@@ -168,11 +164,6 @@ def read_pack():
 					# data[fn][one[0]].append(timeit.timeit(stmt=lambda:get_one(obj), number=1))
 				print()
 	return data
-# for i in data:
-# 	for j in data[i]:
-# 		if len(data[i][j]) == 4:
-# 			if data[i][j][3] not in data[i]:
-# 				print(data[i][j][3])
 
 def walk_commit_get_path(this_commit):
 	global hash_to_path
@@ -213,3 +204,4 @@ with open(".git\\objects\\pack\\pack_data.json", "w") as f:
 	json.dump(pack_data,f)
 with open(".git\\objects\\pack\\hash_to_path.json", "w") as f:
 	json.dump(hash_to_path,f)
+#diff测试
