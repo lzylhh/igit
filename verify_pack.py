@@ -16,15 +16,21 @@ def get_all_objs(repo_name):
 	all_objs = "git rev-list --objects --no-object-names --all"
 	result = []
 	for line in os.popen(all_objs).readlines():
-	# if repo.get(str(line[:-1])).type == types["OBJ_BLOB"]:
 		result.append(str(line[:-1]))
+	return result
+def get_all_size(repo_name):
+	all_objs = "git cat-file --batch-check --batch-all-objects"
+	result = {}
+	for line in os.popen(all_objs).readlines():
+		l = str(line[:-1]).split()
+		result[l[0]] = int(l[2])
 	return result
 
 os.chdir(path)
 repo = Repository('.git')
 hash_to_path = {}
 path_to_hash = {}
-repo = Repository('.git')
+all_sizes = get_all_size("")
 def get_one(hash):
 	return repo.get(hash).read_raw()
 for obj in get_all_objs(''):
@@ -75,11 +81,12 @@ def read_pack_file(name,obj_size , offset_in_packfile, base_hash):
 			re += ((b & 0x7f) << (cishu * 7)) 
 		# print(re)
 	#读取恢复指令
-	base_data = repo.get(base_hash).read_raw()
-	now_data = bytes()
-	num = 0
+	# base_data = repo.get(base_hash).read_raw()
+	# now_data = bytes()
+	num1 = 0
+	num2 = 0
 	while(True):
-		num += 1
+		
 
 		point += 1
 		if point >= len(delta_data):
@@ -89,6 +96,7 @@ def read_pack_file(name,obj_size , offset_in_packfile, base_hash):
 		tag = b & 0x80
 		#copy指令
 		if tag:
+			num1 += 1
 			flag = b
 
 			offset = 0
@@ -109,18 +117,19 @@ def read_pack_file(name,obj_size , offset_in_packfile, base_hash):
 
 					size += b<<(8*i)				
 				chizi <<= 1
-			now_data += base_data[offset:(offset+size)]
-			print(offset)
-			print(size)
+			# now_data += base_data[offset:(offset+size)]
+			# print(offset)
+			# print(size)
 		#新数据指令
 		else:
+			num2 += 1
 			data_size = b&0x7f
 			# print(data_size)
 			data = delta_data[(point+1):(point+data_size+1)]
-			now_data += data
+			# now_data += data
 			# print(data.decode('utf-8'))
 			point += data_size
-	return now_data
+	return [num1, num2]
 
 def read_pack():
 	data = {}
@@ -147,14 +156,15 @@ def read_pack():
 						data[fn][one[0]] = [one[1], int(one[2])]
 					elif len(one) == 7:
 
-						data[fn][one[0]] = [one[1], int(one[2]), int(one[5]), one[6]]
+						data[fn][one[0]] = [one[1], all_sizes[one[0]], int(one[5]), one[6]]
 						size_in_packfile = int(one[3])
 						offset_in_packfile = int(one[4])
 						now_data = read_pack_file(file_name[:-4] + ".pack", size_in_packfile, offset_in_packfile, one[6])
-						ff= open("huanyuan.py", "wb")
-						ff.write(now_data)
+						data[fn][one[0]].append(now_data[0])
+						data[fn][one[0]].append(now_data[1])
+						# ff= open(one[0]+ ".py", "wb")
+						# ff.write(now_data)
 					# data[fn][one[0]].append(timeit.timeit(stmt=lambda:get_one(obj), number=1))
-
 				print()
 	return data
 # for i in data:
