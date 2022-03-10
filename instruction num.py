@@ -10,38 +10,14 @@ import time
 import json
 import timeit
 
-path = "C:\\Users\\dell\\Desktop\\g6"#修改包路径即可，该版本适配windows
+path = "C:\\Users\\dell\\Desktop\\bigfile"#修改包路径即可，该版本适配windows
 
-def get_all_objs(repo_name):
-	all_objs = "git rev-list --objects --no-object-names --all"
-	result = []
-	for line in os.popen(all_objs).readlines():
-		result.append(str(line[:-1]))
-	return result
-def get_all_size(repo_name):
-	all_objs = "git cat-file --batch-check --batch-all-objects"
-	result = {}
-	for line in os.popen(all_objs).readlines():
-		l = str(line[:-1]).split()
-		result[l[0]] = int(l[2])
-	return result
+copy_num = 0
+insert_num = 0
 
 os.chdir(path)
-repo = Repository('.git')
-hash_to_path = {}
-path_to_hash = {}
-all_sizes = get_all_size("")
-def get_one(hash):
-	return repo.get(hash).read_raw()
-for obj in get_all_objs(''):
-	hash_to_path[obj] = set()
-def get_all_commit(repo_name):
-	all_commits = "git log --pretty=format:\"%H\" --all"
-	result = []
-	
-	for line in os.popen(all_commits).readlines():
-		result.append(str(line[:-1]))
-	return result
+
+
 def read_pack_file(name,obj_size , offset_in_packfile, base_hash):
 	f = open(name, 'rb')
 	f.seek(offset_in_packfile, 0)
@@ -127,11 +103,15 @@ def read_pack_file(name,obj_size , offset_in_packfile, base_hash):
 	return [num1, num2]
 
 def read_pack():
+	global copy_num
+	global insert_num
 	data = {}
 	pack_order = "git verify-pack -v "
-	for root,dirs,files in os.walk(".git\\objects\\pack"):
+	for root,dirs,files in os.walk("."):
 		for fn in files:
 			file_name = os.path.join(root, fn)
+			copy_num = 0
+			insert_num = 0
 			if fn.endswith(".idx"):
 				data[fn] = {}
 				num = 0
@@ -151,53 +131,17 @@ def read_pack():
 						data[fn][one[0]] = [one[1], int(one[2])]
 					elif len(one) == 7:
 
-						data[fn][one[0]] = [one[1], all_sizes[one[0]], int(one[5]), one[6]]
 						size_in_packfile = int(one[3])
 						offset_in_packfile = int(one[4])
 						now_data = read_pack_file(file_name[:-4] + ".pack", size_in_packfile, offset_in_packfile, one[6])
-						data[fn][one[0]].append(now_data[0])
-						data[fn][one[0]].append(now_data[1])
+						copy_num += now_data[0]
+						insert_num += now_data[1]
 						# ff= open(one[0]+ ".py", "wb")
 						# ff.write(now_data)
 					# data[fn][one[0]].append(timeit.timeit(stmt=lambda:get_one(obj), number=1))
 				print()
+				print(file_name)
+				print(copy_num)
+				print(insert_num)
 	return data
-def walk_commit_get_path(this_commit):
-	global hash_to_path
-	global path_to_hash
-	global repo
-	queue = [[repo.get(this_commit).tree, ""]]
-	while len(queue) > 0:
-		two = queue.pop(0)
-		this_tree = two[0]
-		for t in this_tree:
-			if t.name == None:
-				path = ""
-			else:
-				if two[1] != "":
-					path = two[1] + '/' + t.name
-				else:
-					path = t.name
-			key = str(t.id)
-			try:
-				hash_to_path[key].add(path)
-			except:
-				print("continue")
-			if t.type == GIT_OBJ_TREE:
-				queue.append([t, path])
-commits = get_all_commit("")
-l = len(commits)
-print(str(l) + " commits start scanning:")
-num = 0 
-for c in commits:
-	walk_commit_get_path(c)
-	num += 1
-	print("\rscanning：%.2f%%" %(float(num/l*100)),end='')
-print()
-for i in hash_to_path:
-	hash_to_path[i] = list(hash_to_path[i])
-pack_data  = read_pack()
-with open(".git\\objects\\pack\\pack_data.json", "w") as f:
-	json.dump(pack_data,f)
-with open(".git\\objects\\pack\\hash_to_path.json", "w") as f:
-	json.dump(hash_to_path,f)
+read_pack()
