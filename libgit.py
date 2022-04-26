@@ -14,13 +14,11 @@ def get_all_objs(repo_name):
 	all_objs = "git rev-list --objects --no-object-names --all"
 	result = []
 	for line in os.popen(all_objs).readlines():
-	# if repo.get(str(line[:-1])).type == types["OBJ_BLOB"]:
 		result.append(str(line[:-1]))
 	return result
 def get_all_commit(repo_name):
 	all_commits = "git log --pretty=format:\"%H\" --all"
-	result = []
-	
+	result = []	
 	for line in os.popen(all_commits).readlines():
 		result.append(str(line[:-1]))
 	return result

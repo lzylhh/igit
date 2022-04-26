@@ -72,7 +72,7 @@ def read_pack(pa, repo_name):
 		for fn in files:
 			file_name = os.path.join(root, fn)
 			if fn.endswith(".idx"):
-				print(repo_name + file_name)
+				print(repo_name + "   " +file_name)
 				num = 0
 				lines = os.popen(pack_order + file_name).readlines()
 				pack_file = open( file_name[:-4] + ".pack",'rb')
@@ -84,31 +84,40 @@ def read_pack(pa, repo_name):
 						break
 					one = line.split()
 					res[one[0]] = {}
-					res[one[0]]["repo_name"] = repo_name
-					res[one[0]]["origin_size"] = int(one[2])
-					res[one[0]]["size_in_packfile"] = int(one[3])
+					res[one[0]]["rname"] = repo_name
+					res[one[0]]["s_i_pa"] = int(one[3])
 					if len(one) == 5:
-						res[one[0]]["is_delta"] = 0
+						res[one[0]]["del?"] = 0
 						size_in_packfile = int(one[3])
 						offset_in_packfile = int(one[4])
 						now_data = read_origin_obj(pack_file ,size_in_packfile,offset_in_packfile)
+						now_data = zlib.decompress(now_data)
+						res[one[0]]["o_size"] = len(now_data)
 						for level in range(1,10):
+							res[one[0]][level] = [0] * 3
 							com_data = zlib.compress(now_data, level)
 							size = len(com_data)
 							time = timeit.timeit(stmt=lambda:zlib.compress(now_data, level), number=1)
-							res[one[0]]["level_" + str(level) + "_time"] = time
-							res[one[0]]["level_" + str(level) + "_size"] = size
+							dtime = timeit.timeit(stmt=lambda:zlib.decompress(com_data), number=1)
+							res[one[0]][level][0] = size
+							res[one[0]][level][1] = time
+							res[one[0]][level][2] = dtime
 					elif len(one) == 7:
-						res[one[0]]["is_delta"] = 1
+						res[one[0]]["del?"] = 1
 						size_in_packfile = int(one[3])
 						offset_in_packfile = int(one[4])
 						now_data = read_delta_obj(pack_file, size_in_packfile, offset_in_packfile, one[6])
+						now_data = zlib.decompress(now_data)
+						res[one[0]]["o_size"] = len(now_data)
 						for level in range(1,10):
+							res[one[0]][level] = [0] * 3
 							com_data = zlib.compress(now_data, level)
 							size = len(com_data)
 							time = timeit.timeit(stmt=lambda:zlib.compress(now_data, level), number=1)
-							res[one[0]]["level" + str(level) + "_time"] = time
-							res[one[0]]["level" + str(level) + "_size"] = size
+							dtime = timeit.timeit(stmt=lambda:zlib.decompress(com_data), number=1)
+							res[one[0]][level][0] = size
+							res[one[0]][level][1] = time
+							res[one[0]][level][2] = dtime
 				print()
 
 def compress_by_repo(path, save_path):
