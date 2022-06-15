@@ -10,12 +10,12 @@ import time
 import json
 import timeit
 
-path = "C:\\Users\\dell\\Desktop\\g6"#修改包路径即可，该版本适配windows
+path = "C:\\Users\\15811\\Desktop\\test"#修改包路径即可，该版本适配windows
+path = "F:\\g6"
 
 
-
-# os.chdir(path)
-# repo = Repository('.git')
+os.chdir(path)
+repo = Repository('.git')
 hash_to_path = {}
 path_to_hash = {}
 all_sizes = {}
@@ -41,7 +41,7 @@ def read_pack_file(name,obj_size , offset_in_packfile, base_hash):
 	f.seek(offset_in_packfile, 0)
 	b = f.read(1)
 	typ = ((b[0] & 0x70)>>4)
-	size = b[0] & 0x0f
+	si = b[0] & 0x0f
 	while((b[0] & 0x80) != 0):
 		b = f.read(1)
 	#以上是head
@@ -71,10 +71,12 @@ def read_pack_file(name,obj_size , offset_in_packfile, base_hash):
 			point += 1
 			b = delta_data[point]
 			cishu += 1
-			re += ((b & 0x7f) << (cishu * 7)) 
+			re += ((b & 0x7f) << (cishu * 7))
+		print(re)
 	#读取恢复指令
-	# base_data = repo.get(base_hash).read_raw()
-	# now_data = bytes()
+	base_data = repo.get(base_hash).read_raw()
+	now_data = bytes()
+	all_size = 0
 	num1 = 0
 	num2 = 0
 	while(True):
@@ -88,6 +90,7 @@ def read_pack_file(name,obj_size , offset_in_packfile, base_hash):
 		tag = b & 0x80
 		#copy指令
 		if tag:
+
 			num1 += 1
 			flag = b
 
@@ -100,24 +103,33 @@ def read_pack_file(name,obj_size , offset_in_packfile, base_hash):
 					point += 1
 					b = delta_data[point]
 
-					offset += b<<(8*i)				
+					offset += (b<<(8*i))				
 				chizi <<= 1
 			for i in range(3):
 				if flag & chizi:
+
 					point += 1
 					b = delta_data[point]
-
-					size += b<<(8*i)				
+					size += (b<<(8*i))				
 				chizi <<= 1
+			if size == 0:
+				size = 0x10000
 			# now_data += base_data[offset:(offset+size)]
+			all_size += size
+			# print(base_data[offset:(offset+size)].decode('utf-8'))
+			# print(offset)                     
+			# print(size)
+			# print(" ")
 		#新数据指令
 		else:
 			num2 += 1
 			data_size = b&0x7f
+			all_size += data_size
 			data = delta_data[(point+1):(point+data_size+1)]
 			# now_data += data
 			# print(data.decode('utf-8'))
 			point += data_size
+	print(all_size)
 	return [num1, num2]
 
 def read_pack(x_path):
@@ -150,6 +162,7 @@ def read_pack(x_path):
 						data[fn][one[0]] = [one[1], int(one[2]), int(one[5]), one[6]]
 						size_in_packfile = int(one[3])
 						offset_in_packfile = int(one[4])
+						print(one[0])
 						now_data = read_pack_file(file_name[:-4] + ".pack", size_in_packfile, offset_in_packfile, one[6])
 						data[fn][one[0]].append(now_data[0])
 						data[fn][one[0]].append(now_data[1])
@@ -199,6 +212,4 @@ def analyze(x_path):
 		json.dump(pack_data,f)
 	with open(".git\\objects\\pack\\hash_to_path.json", "w") as f:
 		json.dump(hash_to_path,f)
-pack_data = read_pack("C:\\pack")
-with open("C:\\pack\\pack_data.json", "w") as f:
-		json.dump(pack_data,f)
+read_pack(".git\\objects\\pack")
