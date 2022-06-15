@@ -12,27 +12,21 @@ import timeit
 
 path = "C:\\Users\\dell\\Desktop\\g6"#修改包路径即可，该版本适配windows
 
+
+
+# os.chdir(path)
+# repo = Repository('.git')
+hash_to_path = {}
+path_to_hash = {}
+all_sizes = {}
+
 def get_all_objs(repo_name):
 	all_objs = "git rev-list --objects --no-object-names --all"
 	result = []
 	for line in os.popen(all_objs).readlines():
 		result.append(str(line[:-1]))
 	return result
-def get_all_size(repo_name):
-	all_objs = "git cat-file --batch-check --batch-all-objects"
-	result = {}
-	for line in os.popen(all_objs).readlines():
-		l = str(line[:-1]).split()
-		result[l[0]] = int(l[2])
-	return result
 
-os.chdir(path)
-repo = Repository('.git')
-hash_to_path = {}
-path_to_hash = {}
-all_sizes = get_all_size("")
-def get_one(hash):
-	return repo.get(hash).read_raw()
 for obj in get_all_objs(''):
 	hash_to_path[obj] = set()
 def get_all_commit(repo_name):
@@ -126,10 +120,10 @@ def read_pack_file(name,obj_size , offset_in_packfile, base_hash):
 			point += data_size
 	return [num1, num2]
 
-def read_pack():
+def read_pack(x_path):
 	data = {}
 	pack_order = "git verify-pack -v "
-	for root,dirs,files in os.walk(".git\\objects\\pack"):
+	for root,dirs,files in os.walk(x_path):
 		for fn in files:
 			file_name = os.path.join(root, fn)
 			if fn.endswith(".idx"):
@@ -137,6 +131,7 @@ def read_pack():
 				num = 0
 				lines = os.popen(pack_order + file_name).readlines()
 				l = len(lines)
+				all_num = 0
 				for line in lines:
 					num += 1 
 					print("\rreading：%.2f%%" %(float(num/l*100)),end='')
@@ -150,16 +145,15 @@ def read_pack():
 					if len(one) == 5:
 						data[fn][one[0]] = [one[1], int(one[2])]
 					elif len(one) == 7:
-
-						data[fn][one[0]] = [one[1], all_sizes[one[0]], int(one[5]), one[6]]
+						#以下两句自行调整，总大小得依赖于完整包环境
+						# data[fn][one[0]] = [one[1], all_sizes[one[0]], int(one[5]), one[6]]
+						data[fn][one[0]] = [one[1], int(one[2]), int(one[5]), one[6]]
 						size_in_packfile = int(one[3])
 						offset_in_packfile = int(one[4])
 						now_data = read_pack_file(file_name[:-4] + ".pack", size_in_packfile, offset_in_packfile, one[6])
 						data[fn][one[0]].append(now_data[0])
 						data[fn][one[0]].append(now_data[1])
-						# ff= open(one[0]+ ".py", "wb")
-						# ff.write(now_data)
-					# data[fn][one[0]].append(timeit.timeit(stmt=lambda:get_one(obj), number=1))
+						all_num += now_data[0] + now_data[1]
 				print()
 	return data
 def walk_commit_get_path(this_commit):
@@ -185,19 +179,26 @@ def walk_commit_get_path(this_commit):
 				print("continue")
 			if t.type == GIT_OBJ_TREE:
 				queue.append([t, path])
-commits = get_all_commit("")
-l = len(commits)
-print(str(l) + " commits start scanning:")
-num = 0 
-for c in commits:
-	walk_commit_get_path(c)
-	num += 1
-	print("\rscanning：%.2f%%" %(float(num/l*100)),end='')
-print()
-for i in hash_to_path:
-	hash_to_path[i] = list(hash_to_path[i])
-pack_data  = read_pack()
-with open(".git\\objects\\pack\\pack_data.json", "w") as f:
-	json.dump(pack_data,f)
-with open(".git\\objects\\pack\\hash_to_path.json", "w") as f:
-	json.dump(hash_to_path,f)
+def analyze(x_path):
+	global all_sizes
+	x_path = ".git\\objects\\pack"
+	all_sizes = get_all_size("")
+	commits = get_all_commit("")
+	l = len(commits)
+	print(str(l) + " commits start scanning:")
+	num = 0 
+	for c in commits:
+		walk_commit_get_path(c)
+		num += 1
+		print("\rscanning：%.2f%%" %(float(num/l*100)),end='')
+	print()
+	for i in hash_to_path:
+		hash_to_path[i] = list(hash_to_path[i])
+	pack_data  = read_pack(x_path)
+	with open(".git\\objects\\pack\\pack_data.json", "w") as f:
+		json.dump(pack_data,f)
+	with open(".git\\objects\\pack\\hash_to_path.json", "w") as f:
+		json.dump(hash_to_path,f)
+pack_data = read_pack("C:\\pack")
+with open("C:\\pack\\pack_data.json", "w") as f:
+		json.dump(pack_data,f)

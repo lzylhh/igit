@@ -10,7 +10,7 @@ import time
 import json
 import timeit
 
-path = "C:\\Users\\dell\\Desktop\\bigfile"#修改包路径即可，该版本适配windows
+path = "C:\\pack"#修改包路径即可，该版本适配windows
 
 copy_num = 0
 insert_num = 0
@@ -59,6 +59,8 @@ def read_pack_file(name,obj_size , offset_in_packfile, base_hash):
 	# now_data = bytes()
 	num1 = 0
 	num2 = 0
+	num3 = 0
+	num4 = 0
 	while(True):
 		
 
@@ -92,15 +94,17 @@ def read_pack_file(name,obj_size , offset_in_packfile, base_hash):
 					size += b<<(8*i)				
 				chizi <<= 1
 			# now_data += base_data[offset:(offset+size)]
+			num3 += size
 		#新数据指令
 		else:
 			num2 += 1
 			data_size = b&0x7f
 			data = delta_data[(point+1):(point+data_size+1)]
 			# now_data += data
+			num4 += len(data)
 			# print(data.decode('utf-8'))
 			point += data_size
-	return [num1, num2]
+	return [num1, num2, num3, num4]
 
 def read_pack():
 	global copy_num
@@ -111,12 +115,16 @@ def read_pack():
 		for fn in files:
 			file_name = os.path.join(root, fn)
 			copy_num = 0
+			sc = 0
+			si = 0
 			insert_num = 0
+			del_num = 0
 			if fn.endswith(".idx"):
 				data[fn] = {}
 				num = 0
 				lines = os.popen(pack_order + file_name).readlines()
 				l = len(lines)
+
 				for line in lines:
 					num += 1 
 					print("\rreading：%.2f%%" %(float(num/l*100)),end='')
@@ -130,18 +138,28 @@ def read_pack():
 					if len(one) == 5:
 						data[fn][one[0]] = [one[1], int(one[2])]
 					elif len(one) == 7:
-
+						del_num += 1
 						size_in_packfile = int(one[3])
 						offset_in_packfile = int(one[4])
 						now_data = read_pack_file(file_name[:-4] + ".pack", size_in_packfile, offset_in_packfile, one[6])
 						copy_num += now_data[0]
+						sc += now_data[2]
 						insert_num += now_data[1]
+						si += now_data[3]
 						# ff= open(one[0]+ ".py", "wb")
 						# ff.write(now_data)
 					# data[fn][one[0]].append(timeit.timeit(stmt=lambda:get_one(obj), number=1))
 				print()
 				print(file_name)
+				print("copy_num:", end = " ")
 				print(copy_num)
+				print("copy_size:", end = " ")
+				print(sc)
+				print("insert_num:", end = " ")
 				print(insert_num)
+				print("insert_size:", end = " ")
+				print(si)
+				print("del_num:", end = " ")
+				print(del_num)
 	return data
 read_pack()
