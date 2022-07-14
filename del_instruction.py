@@ -11,7 +11,7 @@ import json
 import timeit
 import libgit
 
-path = "C:\\Users\\dell\\Desktop\\_test"#修改包路径即可，该版本适配windows
+path = "C:\\Users\\15811\\Desktop\\_test"#修改包路径即可，该版本适配windows
 
 
 os.chdir(path)
@@ -38,7 +38,6 @@ def get_delta_data(name,obj_size , offset_in_packfile, base_hash = "*"):
 	f.seek(offset_in_packfile, 0)
 	b = f.read(1)
 	typ = ((b[0] & 0x70)>>4)
-	print(typ)
 	si = b[0] & 0x0f
 	cishu = 0
 	qi = 0
@@ -221,7 +220,7 @@ def read_pack(x_path):
 				num = 0
 				lines = os.popen(pack_order + file_name).readlines()
 				l = len(lines)
-				l -= 3
+				l -= 4
 				all_num = 0
 
 				pack_file = open('.git/objects/pack/pack-.pack', 'wb')

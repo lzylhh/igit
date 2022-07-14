@@ -11,9 +11,9 @@ import json
 import timeit
 
 path = "C:\\Users\\15811\\Desktop\\test"#修改包路径即可，该版本适配windows
-path = "F:\\g6"
+path = "F:\\neo4j"
 
-
+offset_file = open("neo4j.txt","a+", encoding="utf-8")
 os.chdir(path)
 repo = Repository('.git')
 hash_to_path = {}
@@ -36,7 +36,7 @@ def get_all_commit(repo_name):
 	for line in os.popen(all_commits).readlines():
 		result.append(str(line[:-1]))
 	return result
-def read_pack_file(name,obj_size , offset_in_packfile, base_hash):
+def read_pack_file(name,obj_size , offset_in_packfile, base_hash,hashname):
 	f = open(name, 'rb')
 	f.seek(offset_in_packfile, 0)
 	b = f.read(1)
@@ -55,6 +55,8 @@ def read_pack_file(name,obj_size , offset_in_packfile, base_hash):
 			re <<= 7
 			re += (b[0] & 0x7f)
 		# print(re)#base negative offset
+		res = str(hashname) + ',' + str(re) + '\n'
+		offset_file.write(res)
 	elif typ == 7:
 		base_sha1 = f.read(20)
 	#delta data
@@ -72,7 +74,7 @@ def read_pack_file(name,obj_size , offset_in_packfile, base_hash):
 			b = delta_data[point]
 			cishu += 1
 			re += ((b & 0x7f) << (cishu * 7))
-		print(re)
+		# print(re)
 	#读取恢复指令
 	base_data = repo.get(base_hash).read_raw()
 	now_data = bytes()
@@ -129,7 +131,7 @@ def read_pack_file(name,obj_size , offset_in_packfile, base_hash):
 			# now_data += data
 			# print(data.decode('utf-8'))
 			point += data_size
-	print(all_size)
+	# print(all_size)
 	return [num1, num2]
 
 def read_pack(x_path):
@@ -162,8 +164,8 @@ def read_pack(x_path):
 						data[fn][one[0]] = [one[1], int(one[2]), int(one[5]), one[6]]
 						size_in_packfile = int(one[3])
 						offset_in_packfile = int(one[4])
-						print(one[0])
-						now_data = read_pack_file(file_name[:-4] + ".pack", size_in_packfile, offset_in_packfile, one[6])
+						# print(one[0])
+						now_data = read_pack_file(file_name[:-4] + ".pack", size_in_packfile, offset_in_packfile, one[6],one[0])
 						data[fn][one[0]].append(now_data[0])
 						data[fn][one[0]].append(now_data[1])
 						all_num += now_data[0] + now_data[1]
