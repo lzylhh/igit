@@ -178,16 +178,16 @@ def pack_by_commit(commit_list, repo_name, single_size = 0):
 
 
 		
-pack = "linux"
-os.chdir(pack)
+# pack = "linux"
+# os.chdir(pack)
 
 
-# for t in repo.get("d6b0236bd288faafd2e879fcb6677c34544322ab").tree:
-# 	print(t.name)
+# # for t in repo.get("d6b0236bd288faafd2e879fcb6677c34544322ab").tree:
+# # 	print(t.name)
 
-commit_list = get_all_commit(pack)
+# commit_list = get_all_commit(pack)
 
-pack_by_commit(commit_list, pack, 1<<30)
+# pack_by_commit(commit_list, pack, 1<<30)
 
 
 
