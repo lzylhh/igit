@@ -18,7 +18,7 @@ def get_all_objs(repo_name):
 	return result
 def get_all_commit(repo_name):
 	all_commits = "git log --pretty=format:\"%H\" --all"
-	result = []	
+	result = []
 	for line in os.popen(all_commits).readlines():
 		result.append(str(line[:-1]))
 	return result
@@ -63,6 +63,7 @@ def write_head(pack_file, lenth):
 	pack_file.write(struct.pack('>I',lenth))#list的大小要有限制，也就是文件数量不大于4G
 	sha1.update(struct.pack('>I', lenth))
 	return sha1
+	
 def head_data(lenth):
 	result = b"PACK"
 	result += struct.pack('>I', 2)
