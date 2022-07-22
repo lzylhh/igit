@@ -63,7 +63,7 @@ def write_head(pack_file, lenth):
 	pack_file.write(struct.pack('>I',lenth))#list的大小要有限制，也就是文件数量不大于4G
 	sha1.update(struct.pack('>I', lenth))
 	return sha1
-	
+
 def head_data(lenth):
 	result = b"PACK"
 	result += struct.pack('>I', 2)
@@ -78,9 +78,9 @@ def write_tail(old_name, sha1_hash):
 	pack_file.close()
 	os.system("git index-pack " + pack_file.name)
 
-def obj_data(obj):
-	f = obj.read_raw()
-	head = 0x00 ^ (obj.type << 4)      #type
+def obj_data(no_compressed_data,obj_type):
+	f = no_compressed_data
+	head = 0x00 ^ (obj_type << 4)      #type
 	MSB = MSB_len(len(f))
 	head =  head ^ int(MSB[0:4], base = 2)
 	MSB = MSB[4:]
@@ -92,6 +92,22 @@ def obj_data(obj):
 		data += struct.pack('B', int(MSB[i*8:(i+1)*8], base = 2))
 	###以上是type和长度######
 	data += zlib.compress(f)
+	return data
+
+def obj_data_test(compressed_data,obj_type,obj_len):
+	f = compressed_data
+	head = 0x00 ^ (obj_type << 4)      #type
+	MSB = MSB_len(obj_len)
+	head =  head ^ int(MSB[0:4], base = 2)
+	MSB = MSB[4:]
+	n = int(len(MSB) / 8)
+	if n >= 1:
+		head = (head ^ 0x80)
+	data = struct.pack('B', head)
+	for i in range(0,n):
+		data += struct.pack('B', int(MSB[i*8:(i+1)*8], base = 2))
+	###以上是type和长度######
+	data += f
 	return data
 
 def new_pack_By_data(da, lenth):
@@ -121,7 +137,7 @@ def new_pack_By_list(object_list, repo_name):
 		num += 1
 		print("\rpacking：%.2f%%" %(float(num/l*100)),end='')
 		obj = repo.get(file)
-		data = obj_data(obj)
+		data = obj_data(obj.read_raw(),obj.type)
 		pack_file.write(data)
 		sha1.update(data)
 	check_sum = sha1.hexdigest()
