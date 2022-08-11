@@ -10,7 +10,7 @@ import time
 import json
 import timeit
 
-path = "C:\\pack"#修改包路径即可，该版本适配windows
+path = "F:\\linux"#修改包路径即可，该版本适配windows
 
 copy_num = 0
 insert_num = 0

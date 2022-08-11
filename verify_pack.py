@@ -13,7 +13,7 @@ import timeit
 path = "C:\\Users\\15811\\Desktop\\test"#修改包路径即可，该版本适配windows
 path = "F:\\neo4j"
 
-offset_file = open("neo4j.txt","a+", encoding="utf-8")
+# offset_file = open("neo4j.txt","a+", encoding="utf-8")
 os.chdir(path)
 repo = Repository('.git')
 hash_to_path = {}
@@ -197,7 +197,7 @@ def walk_commit_get_path(this_commit):
 def analyze(x_path):
 	global all_sizes
 	x_path = ".git\\objects\\pack"
-	all_sizes = get_all_size("")
+
 	commits = get_all_commit("")
 	l = len(commits)
 	print(str(l) + " commits start scanning:")
@@ -207,11 +207,11 @@ def analyze(x_path):
 		num += 1
 		print("\rscanning：%.2f%%" %(float(num/l*100)),end='')
 	print()
-	for i in hash_to_path:
-		hash_to_path[i] = list(hash_to_path[i])
-	pack_data  = read_pack(x_path)
-	with open(".git\\objects\\pack\\pack_data.json", "w") as f:
-		json.dump(pack_data,f)
-	with open(".git\\objects\\pack\\hash_to_path.json", "w") as f:
-		json.dump(hash_to_path,f)
-read_pack(".git\\objects\\pack")
+	# for i in hash_to_path:
+	# 	hash_to_path[i] = list(hash_to_path[i])
+	# pack_data  = read_pack(x_path)
+	# with open(".git\\objects\\pack\\pack_data.json", "w") as f:
+	# 	json.dump(pack_data,f)
+	# with open(".git\\objects\\pack\\hash_to_path.json", "w") as f:
+	# 	json.dump(hash_to_path,f)
+analyze(".git\\objects\\pack")
