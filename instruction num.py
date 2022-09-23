@@ -10,7 +10,7 @@ import time
 import json
 import timeit
 
-path = "F:\\linux"#修改包路径即可，该版本适配windows
+path = "C:\\Users\\dell\\Desktop\\git-data\\c\\scrcpy"#修改包路径即可，该版本适配windows
 
 copy_num = 0
 insert_num = 0

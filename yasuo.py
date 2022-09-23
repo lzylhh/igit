@@ -11,6 +11,7 @@ import timeit
 import random
 import matplotlib.pyplot as plt
 import json
+from deepdiff import DeepDiff
 PATH = "C:\\Users\\dell\\Desktop\\git-data"
 SPATH = "C:\\Users\\dell\\Desktop\\git_data"
 res = {}
@@ -72,7 +73,7 @@ def read_pack(pa, repo_name):
 		for fn in files:
 			file_name = os.path.join(root, fn)
 			if fn.endswith(".idx"):
-				print(repo_name + "   " +file_name)
+				print(repo_name + file_name)
 				num = 0
 				lines = os.popen(pack_order + file_name).readlines()
 				pack_file = open( file_name[:-4] + ".pack",'rb')
@@ -84,40 +85,31 @@ def read_pack(pa, repo_name):
 						break
 					one = line.split()
 					res[one[0]] = {}
-					res[one[0]]["rname"] = repo_name
-					res[one[0]]["s_i_pa"] = int(one[3])
+					res[one[0]]["repo_name"] = repo_name
+					res[one[0]]["origin_size"] = int(one[2])
+					res[one[0]]["size_in_packfile"] = int(one[3])
 					if len(one) == 5:
-						res[one[0]]["del?"] = 0
+						res[one[0]]["is_delta"] = 0
 						size_in_packfile = int(one[3])
 						offset_in_packfile = int(one[4])
 						now_data = read_origin_obj(pack_file ,size_in_packfile,offset_in_packfile)
-						now_data = zlib.decompress(now_data)
-						res[one[0]]["o_size"] = len(now_data)
 						for level in range(1,10):
-							res[one[0]][level] = [0] * 3
 							com_data = zlib.compress(now_data, level)
 							size = len(com_data)
 							time = timeit.timeit(stmt=lambda:zlib.compress(now_data, level), number=1)
-							dtime = timeit.timeit(stmt=lambda:zlib.decompress(com_data), number=1)
-							res[one[0]][level][0] = size
-							res[one[0]][level][1] = time
-							res[one[0]][level][2] = dtime
+							res[one[0]]["level_" + str(level) + "_time"] = time
+							res[one[0]]["level_" + str(level) + "_size"] = size
 					elif len(one) == 7:
-						res[one[0]]["del?"] = 1
+						res[one[0]]["is_delta"] = 1
 						size_in_packfile = int(one[3])
 						offset_in_packfile = int(one[4])
 						now_data = read_delta_obj(pack_file, size_in_packfile, offset_in_packfile, one[6])
-						now_data = zlib.decompress(now_data)
-						res[one[0]]["o_size"] = len(now_data)
 						for level in range(1,10):
-							res[one[0]][level] = [0] * 3
 							com_data = zlib.compress(now_data, level)
 							size = len(com_data)
 							time = timeit.timeit(stmt=lambda:zlib.compress(now_data, level), number=1)
-							dtime = timeit.timeit(stmt=lambda:zlib.decompress(com_data), number=1)
-							res[one[0]][level][0] = size
-							res[one[0]][level][1] = time
-							res[one[0]][level][2] = dtime
+							res[one[0]]["level_" + str(level) + "_time"] = time
+							res[one[0]]["level_" + str(level) + "_size"] = size
 				print()
 
 def compress_by_repo(path, save_path):
@@ -157,5 +149,63 @@ def compress_by_file(repo_name):
 		plt.title("size-time in zlib compress with level " + str(level), fontdict={'size': 20})
 		plt.legend(loc='best')
 		plt.show()
-compress_by_repo(PATH, SPATH)
+def read_pack2(pa, repo_name):
+	global res
+	pack_order = "git verify-pack -v "
+	repo = Repository(os.path.join(pa, repo_name, ".git"))
+	for root,dirs,files in os.walk(".git\\objects\\pack"):
+		for fn in files:
+			file_name = os.path.join(root, fn)
+			if fn.endswith(".idx"):
+				print(repo_name + "   " +file_name)
+				num = 0
+				lines = os.popen(pack_order + file_name).readlines()
+				pack_file = open( file_name[:-4] + ".pack",'rb')
+				l = len(lines)
+				delta_size = 0
+				for line in lines:
+					num += 1 
+					print("\rreading：%.2f%%" %(float(num/l*100)),end='')
+					if line.startswith("non"):
+						break
+					one = line.split()
+					if len(one) == 7:
+						size_in_packfile = int(one[3])
+						offset_in_packfile = int(one[4])
+				
+						now_data = repo.get(one[0]).read_raw()
+						origin_data = repo.get(one[6]).read_raw()
+						res1 = {}
+						res2 = {}
+						i = 0
+						while i < len(origin_data) - 4:
+							res1[origin_data[i:i+4]] = True
+							i += 1
+						i = 0
+						while i < len(now_data):
+							res2[now_data[i:i+4]] = True
+							i += 4
+						# print(DeepDiff(res1,res2,ignore_order=True,).affected_root_keys)
+						diff = DeepDiff(res1,res2,ignore_order=True,ignore_encoding_errors=True)
+						if "dictionary_item_added" in diff:
+							delta_size += len(diff["dictionary_item_added"])
+				print(delta_size*4)
+
+						
+				print()
+def compress_by_repo2(path):
+	global res
+	for fir in os.listdir(path):
+		fir_dir = os.path.join(path, fir)
+		for sec in os.listdir(fir_dir):
+			if sec != "scrcpy":
+				continue
+			sec_dir = os.path.join(fir_dir, sec)
+			os.chdir(sec_dir)
+			li = get_all_objs(sec_dir)
+			all_size = get_all_size(sec_dir)
+			l = len(li)
+			res = {}
+			read_pack2(fir_dir,sec)
+compress_by_repo2(PATH)
 
