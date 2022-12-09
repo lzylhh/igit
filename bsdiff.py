@@ -83,30 +83,41 @@ def get_diff(src_bytes, dst_bytes):
 		size = x
 		copy_size = get_copy_size(offset, size)
 		if copy_size >= size + 1:
-			final += size + 1
+			lianxu = 0
+			while i < l:
+				lianxu += tcontrol[i][0]
+				oldpos += tcontrol[i][0] + tcontrol[i][2]
+				i += 1
+				if i >= l:
+					break
+				cs = get_copy_size(oldpos, tcontrol[i][0])
+				if cs < tcontrol[i][0]:
+					break
+			exa = lianxu // 127
+			final += lianxu + exa + 1
 		else:
 			final += copy_size
-		# for j in range(x):
-		# 	# newdata  += core.encode_int64(bdiff[diffpos+j])
-		# 	c = bdiff[diffpos+j]+oldata[oldpos+j]
-		# 	if c > 255:
-		# 		c -= 256
-		# 	copy  += struct.pack('B', bdiff[diffpos+j]+oldata[oldpos+j])
-		newdata += copy
-		diffpos += x
-		oldpos += x
+			# for j in range(x):
+			# 	# newdata  += core.encode_int64(bdiff[diffpos+j])
+			# 	c = bdiff[diffpos+j]+oldata[oldpos+j]
+			# 	if c > 255:
+			# 		c -= 256
+			# 	copy  += struct.pack('B', bdiff[diffpos+j]+oldata[oldpos+j])
+			# newdata += copy
+			# diffpos += x
+			oldpos += x
 
-		final += y
+			# final += y
 
-		newdata += bextra[expos: expos + y]
-		expos += y
+			# newdata += bextra[expos: expos + y]
+			# expos += y
 
-		oldpos += z
-		i += 1
+			oldpos += z
+			i += 1
 	return final
 
 def test_neo4j():
-	os.chdir("C:\\Users\\15811\\Desktop\\neo4j")
+	os.chdir("C:\\Users\\dell\\Desktop\\neo4j")
 	repo = Repository(".git")
 	pack_order = "git verify-pack -v "
 	delta_size = 0
@@ -132,9 +143,14 @@ def test_neo4j():
 						new_data = repo.get(one[0]).read_raw()
 						origin_data = repo.get(one[6]).read_raw()
 						new_delta_size += get_diff(origin_data, new_data)
-						# now_data = yasuo.read_delta_obj(pack_file, size_in_packfile, offset_in_packfile, one[6])
-						# delta_size += len(zlib.decompress(now_data))
-						
+						now_data = yasuo.read_delta_obj(pack_file, size_in_packfile, offset_in_packfile, one[6])
+						delta_size += len(zlib.decompress(now_data))
+					if(num % 50000 == 0):
+						print()
+						print(delta_size)
+						print(new_delta_size)
+	print()
 	print(delta_size)
-	print(new_delta_size)
+	print(new_delta_size)					
+	
 test_neo4j()
