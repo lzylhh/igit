@@ -207,5 +207,4 @@ def compress_by_repo2(path):
 			l = len(li)
 			res = {}
 			read_pack2(fir_dir,sec)
-compress_by_repo2(PATH)
 
