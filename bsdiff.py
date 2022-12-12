@@ -63,7 +63,7 @@ def get_diff(src_bytes, dst_bytes):
 	oldpos = 0
 	diffpos = 0
 	expos = 0
-	newdata = bytearray(b'')
+	# newdata = bytearray(b'')
 	oldata = bytearray(src_bytes)
 	num = 0
 	i = 0
@@ -78,7 +78,7 @@ def get_diff(src_bytes, dst_bytes):
 			final += y
 			i += 1
 			continue
-		copy = bytearray(b'')
+		# copy = bytearray(b'')
 		offset = oldpos
 		size = x
 		copy_size = get_copy_size(offset, size)
@@ -114,10 +114,13 @@ def get_diff(src_bytes, dst_bytes):
 
 			oldpos += z
 			i += 1
+		final += y
+		expos += y
+
 	return final
 
 def test_neo4j():
-	os.chdir("C:\\Users\\dell\\Desktop\\neo4j")
+	os.chdir("C:\\Users\\15811\\Desktop\\neo4j")
 	repo = Repository(".git")
 	pack_order = "git verify-pack -v "
 	delta_size = 0
