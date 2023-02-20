@@ -12,14 +12,10 @@ import timeit
 import libgit
 import math
 
-path = "C:\\Users\\dell\\Desktop\\neo4j"#修改包路径即可，该版本适配windows
 
-
-os.chdir(path)
-repo = Repository('.git')
 offsets = {}
 all_sizes = {}
-
+repo = 0
 def get_all_objs(repo_name):
 	all_objs = "git rev-list --objects --no-object-names --all"
 	result = []
@@ -79,7 +75,37 @@ def add_format(size):
 	return res
 
 def copy_format(offset, size):
-	return
+	res = bytearray()
+	biaozhi = 0x80
+	if (offset & 0xff) != 0:
+		res += struct.pack('B', offset & 0xff)
+		biaozhi = biaozhi | 0x01
+	if (offset & 0xff00) != 0:
+		res += struct.pack('B', (offset & 0xff00) >> 8)
+		biaozhi = biaozhi | 0x02
+	if (offset & 0xff0000) != 0:
+		res += struct.pack('B', (offset & 0xff0000) >> 16)
+		biaozhi = biaozhi | 0x04
+	if (offset & 0xff000000) != 0:
+		res += struct.pack('B', (offset & 0xff000000) >> 24)
+		biaozhi = biaozhi | 0x08
+	if offset > 0xffffffff:
+		print("字节偏移量过大，请终止程序")
+	if size != 0x10000:
+		if (size & 0xff) != 0:
+			res += struct.pack('B', size & 0xff)
+			biaozhi = biaozhi | 0x10
+		if (size & 0xff00) != 0:
+			res += struct.pack('B', (size & 0xff00) >> 8)
+			biaozhi = biaozhi | 0x20
+		if (size & 0xff0000) != 0:
+			res += struct.pack('B', (size & 0xff0000) >> 16)
+			biaozhi = biaozhi | 0x40
+		if size > 0xffffff:
+			print("体积过大，请终止程序")
+	res = struct.pack('B', biaozhi) + res
+	return res
+	
 
 def offset_format(offset):
 	# print("原始offset")
@@ -109,7 +135,7 @@ def offset_format(offset):
 		else:
 			result = result + '1' + bnum[(i * 7) : (i * 7 + 7)]
 	n = len(result)//8
-	res = b''
+	res = bytearray()
 	for i in range(0,n):
 		res += struct.pack('B', int(result[i*8:(i+1)*8], base = 2))
 	while(True):
@@ -132,18 +158,21 @@ def del_instruction(da):
 	delta_data = da[0]
 	base_hash = da[1]
 	delta_data = zlib.decompress(delta_data)
-	res = b''
+	res = bytearray()
 	#先读取base size 和 size of the object to be reconstructed
 	point = -1
 	for i in range(2):
 		point += 1
 		b = delta_data[point]
+		# print("原生")
+		# print(bin(b)[2:])
 		res += struct.pack('B',b)
 		cishu = 0
 		re = b & 0x7f
 		while((b & 0x80) != 0):
 			point += 1
 			b = delta_data[point]
+			# print(bin(b)[2:])
 			res += struct.pack('B',b)
 			cishu += 1
 			re += ((b & 0x7f) << (cishu * 7))
@@ -227,7 +256,7 @@ def del_instruction(da):
 	return res 
 
 def delta_obj_data(delta_data,neg_offset, obj_type,obj_len = 0):
-
+	data = bytearray()
 	head = 0x00 ^ (obj_type << 4)
 	MSB = libgit.MSB_len(len(delta_data))
 	head =  head ^ int(MSB[0:4], base = 2)
@@ -235,7 +264,7 @@ def delta_obj_data(delta_data,neg_offset, obj_type,obj_len = 0):
 	n = int(len(MSB) / 8)
 	if n >= 1:
 		head = (head ^ 0x80)
-	data = struct.pack('B', head)
+	data += struct.pack('B', head)
 	for i in range(0,n):
 		data += struct.pack('B', int(MSB[i*8:(i+1)*8], base = 2))
 	###以上是type和长度######
@@ -297,6 +326,12 @@ def read_pack(x_path):
 						#以下两句自行调整，总大小得依赖于完整包环境
 						compressed_delta_data = get_compressed_data(file_name[:-4] + ".pack", size_in_packfile, offset_in_packfile, one[6])
 						delta_data = del_instruction(compressed_delta_data)
+						# print("生成")
+						# for k in libgit.size_format(len(repo.get(one[6]).read_raw())):
+						# 	print(bin(k)[2:])
+						# print("生成")
+						# for k in libgit.size_format(len(repo.get(one[0]).read_raw())):
+						# 	print(bin(k)[2:])
 						_data = delta_obj_data(delta_data, guangbiao - offset_ji[one[6]], 6)
 						# _data = delta_obj_data(compressed_delta_data[0], compressed_delta_data[2], 6,len(zlib.decompress(compressed_delta_data[0])))
 						pack_file.write(_data)
@@ -319,4 +354,9 @@ def read_pack(x_path):
 				pack_file.close()
 				print()
 				libgit.write_tail(pack_file.name, check_sum)
-read_pack(".git\\objects\\pack")
+def main():
+	global repo
+	path = "C:\\Users\\dell\\Desktop\\xgboost"#修改包路径即可，该版本适配windows
+	os.chdir(path)
+	repo = Repository('.git')
+	read_pack(".git\\objects\\pack")

@@ -10,8 +10,7 @@ import time
 import json
 import timeit
 
-path = "C:\\Users\\15811\\Desktop\\test"#修改包路径即可，该版本适配windows
-path = "F:\\neo4j"
+path = "C:\\Users\\dell\\Desktop\\xgboost"#修改包路径即可，该版本适配windows
 
 # offset_file = open("neo4j.txt","a+", encoding="utf-8")
 os.chdir(path)
@@ -56,7 +55,6 @@ def read_pack_file(name,obj_size , offset_in_packfile, base_hash,hashname):
 			re += (b[0] & 0x7f)
 		# print(re)#base negative offset
 		res = str(hashname) + ',' + str(re) + '\n'
-		offset_file.write(res)
 	elif typ == 7:
 		base_sha1 = f.read(20)
 	#delta data
@@ -165,10 +163,10 @@ def read_pack(x_path):
 						size_in_packfile = int(one[3])
 						offset_in_packfile = int(one[4])
 						# print(one[0])
-						now_data = read_pack_file(file_name[:-4] + ".pack", size_in_packfile, offset_in_packfile, one[6],one[0])
-						data[fn][one[0]].append(now_data[0])
-						data[fn][one[0]].append(now_data[1])
-						all_num += now_data[0] + now_data[1]
+						# now_data = read_pack_file(file_name[:-4] + ".pack", size_in_packfile, offset_in_packfile, one[6],one[0])
+						# data[fn][one[0]].append(now_data[0])
+						# data[fn][one[0]].append(now_data[1])
+						# all_num += now_data[0] + now_data[1]
 				print()
 	return data
 def walk_commit_get_path(this_commit):
@@ -207,11 +205,11 @@ def analyze(x_path):
 		num += 1
 		print("\rscanning：%.2f%%" %(float(num/l*100)),end='')
 	print()
-	# for i in hash_to_path:
-	# 	hash_to_path[i] = list(hash_to_path[i])
-	# pack_data  = read_pack(x_path)
-	# with open(".git\\objects\\pack\\pack_data.json", "w") as f:
-	# 	json.dump(pack_data,f)
-	# with open(".git\\objects\\pack\\hash_to_path.json", "w") as f:
-	# 	json.dump(hash_to_path,f)
+	for i in hash_to_path:
+		hash_to_path[i] = list(hash_to_path[i])
+	pack_data  = read_pack(x_path)
+	with open(".git\\objects\\pack\\pack_data.json", "w") as f:
+		json.dump(pack_data,f)
+	with open(".git\\objects\\pack\\hash_to_path.json", "w") as f:
+		json.dump(hash_to_path,f)
 analyze(".git\\objects\\pack")

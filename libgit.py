@@ -7,6 +7,7 @@ import struct
 import os
 import hashlib
 import time
+import math
 types = {"OBJ_COMMIT" : 1, "OBJ_TREE" : 2, "OBJ_BLOB" : 3, "OBJ_TAG" : 4, "OBJ_OFS_DELTA" : 6, "OBJ_REF_DELTA" : 7 }
 li = set()
 commit_list = set()
@@ -54,6 +55,36 @@ def MSB_len(lenth):
 			result = bnum[(i+1) * 7:] + result
 	return result
 
+def size_format(offset):
+	# print("原始offset")
+	# print(bin(offset)[2:])
+	end_len = math.ceil(len(bin(offset)[2:]) / 7)
+	of = offset
+
+	bnum = bin(of)[2:]
+
+	while(True):
+		if len(bnum) % 7 == 0:
+			break
+		bnum = '0' + bnum
+
+	n = int(len(bnum)/7)		
+	result = ''
+	for i in range(n-1,-1,-1):
+		if i == 0:
+			result = result + '0' + bnum[(i * 7) : (i * 7 + 7)]
+		else:
+			result = result + '1' + bnum[(i * 7) : (i * 7 + 7)]
+	n = len(result)//8
+	res = bytearray()
+	for i in range(0,n):
+		res += struct.pack('B', int(result[i*8:(i+1)*8], base = 2))
+
+	# print("我写的字节序")
+	# for i in res:
+	# 	print(bin(i)[2:])
+	return res
+
 def write_head(pack_file, lenth):
 	sha1 = hashlib.sha1()
 	pack_file.write(b"PACK")
@@ -87,7 +118,8 @@ def obj_data(no_compressed_data,obj_type):
 	n = int(len(MSB) / 8)
 	if n >= 1:
 		head = (head ^ 0x80)
-	data = struct.pack('B', head)
+	data = bytearray()
+	data += struct.pack('B', head)
 	for i in range(0,n):
 		data += struct.pack('B', int(MSB[i*8:(i+1)*8], base = 2))
 	###以上是type和长度######
@@ -103,7 +135,8 @@ def obj_data_test(compressed_data,obj_type,obj_len):
 	n = int(len(MSB) / 8)
 	if n >= 1:
 		head = (head ^ 0x80)
-	data = struct.pack('B', head)
+	data = bytearray()
+	data += struct.pack('B', head)
 	for i in range(0,n):
 		data += struct.pack('B', int(MSB[i*8:(i+1)*8], base = 2))
 	###以上是type和长度######

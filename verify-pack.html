@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title></title>
+<script src="https://cdn.staticfile.org/echarts/4.3.0/echarts.min.js"></script>
+</head>
+<body>
+<input type="file" id="files1" >
+<input type="file" id="files2" >
+</br>
+
+<input id="hash"  value="hash" type="text">
+<button onclick="out()">查询</button>
+ <table width="1800" border="1" cellspacing="0">
+    <thead>
+       <tr>
+       	  <th>hash</th>
+          <th>type</th>
+          <th>size</th>
+          <th>depth</th>
+          <th>preview base</th>
+          <th>root base</th>
+          <th>path</th>
+       </tr> 
+    </thead>
+    <tbody id="tbMain">
+    </tbody>
+ </table>
+</br>
+<button onclick="paint()">统计图</button>
+<div id="main1" style="width: 1500px;height:400px;"></div>
+<div id="main2" style="width: 1500px;height:400px;"></div>
+
+</br>
+<script>
+	//c98e7d38c8ef0ff3b812edead6395590346a21b1
+	//d6e11b694c2364cd5143c1887c2d0374b9b82f18
+var hash_to_path = {}
+var pack_data = {}
+let file1 = document.getElementById("files1");
+let file2 = document.getElementById("files2");
+file1.onchange = function(event){
+	var f = this.files[0];
+	var reader = new FileReader();
+	reader.onload = function(event){
+		if(f.name == "hash_to_path.json")
+		{
+			extract1(reader.result)
+		}
+		else if(f.name == "pack_data.json")
+		{
+			extract2(reader.result)
+		}
+	}
+	reader.readAsText(f);
+}
+file2.onchange = function(event){
+	var f = this.files[0];
+	var reader = new FileReader();
+	reader.onload = function(event){
+		if(f.name == "hash_to_path.json")
+		{
+			extract1(reader.result)
+		}
+		else if(f.name == "pack_data.json")
+		{
+			extract2(reader.result)
+		}
+	}
+	reader.readAsText(f);
+}
+function paint()
+{
+	var x1 = [];
+	var x2 = ["0-1k","1k-10k","10k-100k", "100k-500k", "500k-1M","1M-2M", ">2M"]
+	for(i = 0; i <= 50; i++)
+	{
+		x1[i] = String(i)
+	}
+	var size = []
+	for(i = 0 ; i <= 50; i++)
+	{
+		size[i] = 0
+	}
+	var depth = [0,0,0,0,0,0,0]
+	for(p in pack_data)
+	{
+		pack = pack_data[p]
+		for(hash in pack)
+		{
+			if(pack[hash].length == 4)
+			{
+				j = pack[hash][2]
+				size[j] += 1
+			}
+			else
+			{
+				size[0] += 1
+			}
+			if(pack[hash][1] < 1000)
+			{
+				depth[0] += 1
+			}
+			else if(pack[hash][1] < 10000 )
+			{
+				depth[1] += 1
+			}
+			else if(pack[hash][1] < 100000)
+			{
+				depth[2] += 1
+			}
+			else if(pack[hash][1] < 500000)
+			{
+				depth[3] += 1
+			}
+			else if(pack[hash][1] < 1000000)
+			{
+				depth[4] += 1
+			}
+			else if(pack[hash][1] < 2000000)
+			{
+				depth[5] += 1
+			}
+			else
+				depth[6] += 1
+		}
+	}
+	let sum = 0
+	size.map(item => sum+=item);
+	for(i = 0 ; i < size.length; i++)
+	{
+
+		size[i] = parseFloat(parseFloat(size[i])/parseFloat(sum))
+	}
+	for(hash in hash_to_path)
+	{
+		if(hash_to_path[hash].length > 1)
+		{
+			console.log(hash)
+		}
+	}
+
+	var myChart1 = echarts.init(document.getElementById('main1'));
+	var myChart2 = echarts.init(document.getElementById('main2'));
+	var option1 = {
+            xAxis: {
+                data: x1
+            },
+            yAxis: {},
+            series: [{
+                name: 'size',
+                type: 'bar',
+                data: size
+            }]
+        };
+    var option2 = {
+            xAxis: {
+                data: x2
+            },
+            yAxis: {},
+            series: [{
+                name: 'size',
+                type: 'bar',
+                data: depth
+            }]
+        };
+    myChart1.setOption(option1);
+    myChart2.setOption(option2);
+}
+function out()
+{
+	var hash = document.getElementById("hash").value
+	var tbody = document.getElementById('tbMain');
+	var row = document.createElement('tr');
+	for(p in pack_data)
+	{
+		if(hash in pack_data[p])
+		{
+			pack = pack_data[p]
+			var idCell = document.createElement('td');
+			idCell.innerHTML = hash;
+			row.appendChild(idCell);
+			if(pack[hash].length == 2)
+			{
+				console.log("dd")
+				for(i = 0; i < 2; i++)
+				{
+					var idCell = document.createElement('td');
+					idCell.innerHTML = pack[hash][i];
+					row.appendChild(idCell);
+				}
+				for(i = 0; i < 3; i++)
+				{
+					var idCell = document.createElement('td');
+					idCell.innerHTML = ""
+					row.appendChild(idCell);
+				}
+			}
+			else if(pack[hash].length == 4)
+			{
+				console.log("dddd")
+				for(i = 0; i < 4; i++)
+				{
+					var idCell = document.createElement('td');
+					idCell.innerHTML = pack[hash][i]
+					row.appendChild(idCell);
+				}
+				j = pack[hash][2]
+				let temp = hash
+				for(i = 0; i < j; i++)
+				{
+					temp = pack[temp][3]
+				}
+				var idCell = document.createElement('td');
+				idCell.innerHTML = temp
+				row.appendChild(idCell);
+			}
+		}
+	}
+	if(hash in hash_to_path)
+	{
+		var idCell = document.createElement('td');
+		idCell.innerHTML = hash_to_path[hash]
+		row.appendChild(idCell);
+		tbody.appendChild(row);
+	}	
+}
+async function extract1(data)
+{
+	hash_to_path = JSON.parse(data)
+}
+async function extract2(data)
+{
+	pack_data = JSON.parse(data)
+}
+
+</script>
+</body>
+</html>
