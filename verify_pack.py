@@ -16,7 +16,6 @@ path = "C:\\Users\\dell\\Desktop\\xgboost"#修改包路径即可，该版本适�
 os.chdir(path)
 repo = Repository('.git')
 hash_to_path = {}
-path_to_hash = {}
 all_sizes = {}
 
 def get_all_objs(repo_name):
@@ -171,7 +170,6 @@ def read_pack(x_path):
 	return data
 def walk_commit_get_path(this_commit):
 	global hash_to_path
-	global path_to_hash
 	global repo
 	queue = [[repo.get(this_commit).tree, ""]]
 	while len(queue) > 0:
@@ -212,4 +210,4 @@ def analyze(x_path):
 		json.dump(pack_data,f)
 	with open(".git\\objects\\pack\\hash_to_path.json", "w") as f:
 		json.dump(hash_to_path,f)
-analyze(".git\\objects\\pack")
+# analyze(".git\\objects\\pack")

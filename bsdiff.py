@@ -62,6 +62,8 @@ def get_diff(src_bytes, dst_bytes):
 	len_dst, tcontrol, bdiff, bextra = ddiff(src_bytes, dst_bytes)
 	len1 = len(src_bytes)
 	len2 = len(dst_bytes)
+	if len2 < len1:
+		num += 1
 	delta_data = bytearray()
 	#先写入头size
 	delta_data += libgit.size_format(len1)
@@ -219,6 +221,41 @@ def test(delta_data,data1,data2):
 	# file3.write(now_data)
 	# file2.write(data2)
 	# file1.write(data1)
+def Repack(path,sortlist):
+	os.chdir(path)
+	repo = Repository(".git")
+	pack_file = open('.git/objects/pack/pack-.pack', 'wb')
+	l = len(sortlist)
+	sha1 = libgit.write_head(pack_file, l)
+	guangbiao = 0
+	offset_ji = {}
+	num = 0
+	for s in sortlist:
+		num += 1
+		print("\rpacking：%.2f%%" %(float(num/l*100)),end='')
+		obj = repo.get(s)
+		src = obj.read_raw()
+		if sortlist[s] == "":
+			_data = libgit.obj_data(src,obj.type)
+			pack_file.write(_data)
+			sha1.update(_data)
+			offset_ji[s] = guangbiao
+			guangbiao += len(_data)
+		else:
+			base_hash = sortlist[s]
+			delta_data = get_diff(repo.get(base_hash).read_raw(), src)
+			_data = del_instruction.delta_obj_data(delta_data, guangbiao - offset_ji[base_hash], 6)
+			pack_file.write(_data)
+			sha1.update(_data)
+			offset_ji[s] = guangbiao
+			guangbiao += len(_data)
+	check_sum = sha1.hexdigest()
+	pack_file.close()
+	print()
+	libgit.write_tail(pack_file.name, check_sum)
+
+
+			
 
 def repack(path):
 	os.chdir(path)
@@ -226,7 +263,8 @@ def repack(path):
 	pack_order = "git verify-pack -v "
 	delta_size = 0
 	new_delta_size = 0
-
+	num1 = 0
+	num2 = 0
 	for root,dirs,files in os.walk(".git\\objects\\pack"):
 		for fn in files:
 			file_name = os.path.join(root, fn)
@@ -261,6 +299,20 @@ def repack(path):
 					elif len(one) == 7:
 						base_hash = one[6]
 						delta_data = get_diff(repo.get(one[6]).read_raw(), src)
+						# delta_data1 = get_diff(src, repo.get(one[6]).read_raw())
+						# l1 = len(delta_data) + len(repo.get(one[6]).read_raw())
+						# l2 = len(delta_data1) + len(src)
+						# if len(src) > len(repo.get(one[6]).read_raw()):
+						# 	if l1 < l2:
+						# 		num1 += 1
+						# 	else:
+						# 		num2 += 1
+						# else:
+						# 	if l1 > l2:
+						# 		num1 += 1
+						# 	else:
+						# 		num2 += 1
+						# 以上是在测试base大小
 						# if test(delta_data, repo.get(one[6]).read_raw(),src):
 						# 	print(one[0],one[6])
 						_data = del_instruction.delta_obj_data(delta_data, guangbiao - offset_ji[one[6]], 6)
@@ -362,9 +414,9 @@ def test1(path):
 	# file1.write(data1)
 
 def main():
-	repack("C:\\Users\\dell\\Desktop\\kubernetes")
+	repack("C:\\Users\\dell\\Desktop\\xgboost")
 # test1("C:\\Users\\dell\\Desktop\\three.js")
-main()
+# main()
 # def repack1(path):
 # 	os.chdir(path)
 # 	repo = Repository(".git")

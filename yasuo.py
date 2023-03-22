@@ -191,7 +191,6 @@ def read_pack2(pa, repo_name):
 							delta_size += len(diff["dictionary_item_added"])
 				print(delta_size*4)
 
-						
 				print()
 def compress_by_repo2(path):
 	global res
