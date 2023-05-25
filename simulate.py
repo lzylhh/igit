@@ -91,14 +91,15 @@ def test(path):
             src = hash_data[hash_res[j][0]]
             if cmp_hash > 0:
                 delta_data = bsdiff.get_diff(src, dst)
-                x.append(cmp_hash)
-                y.append(len(delta_data)/len(dst))
+                if len(dst) != 0:
+                    x.append(cmp_hash)
+                    y.append(len(delta_data)/len(dst))
         # if p > 2:
         #     num += 1
     f.write(str(x) + '*')
     f.write(str(y) + '*')
     plt.figure()
-    plt.scatter(x, y, 0.01)
+    plt.scatter(x, y, 0.1)
     a1, b1 = optimize.curve_fit(f_1, x, y)[0]
     x1 = np.array(x)
     y1 = a1*x1 + b1
@@ -106,7 +107,7 @@ def test(path):
     plt.xlabel('Ssdeep similar')
     plt.ylabel('Compression ratio')
     plt.show()
-# test("C:\\Users\\dell\\Desktop\\gin")
+test("C:\\Users\\dell\\Desktop\\jieba")
 def testpack(path):
     os.chdir(path)
     repo = Repository(".git")

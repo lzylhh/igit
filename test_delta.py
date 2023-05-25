@@ -84,4 +84,39 @@ def rediff_by_repo(path, save_path):
 			save_file.write(resjson + '\n')
 def main():
 	rediff_by_repo("C:\\Users\\dell\\Desktop\\git-data", "C:\\Users\\dell\\Desktop\\git_data")
-main()
+def read_delta(pa, repo_name):
+	pack_order = "git verify-pack -v "
+	for root,dirs,files in os.walk(".git\\objects\\pack"):
+		for fn in files:
+			file_name = os.path.join(root, fn)
+			if fn.endswith(".idx"):
+				num = 0
+				delta = 0
+				lines = os.popen(pack_order + file_name).readlines()		
+				for line in lines:
+					if line.startswith("non"):
+						break
+					one = line.split()
+					num += 1
+					if len(one) == 7:
+						delta += 1
+	return num,delta
+def compute_delta(path):
+	for fir in os.listdir(path):
+		fir_dir = os.path.join(path, fir)
+		os.chdir(fir_dir)
+		zong,delta = read_delta(path,fir)
+		print(fir, zong, delta, delta/zong)
+# compute_delta("C:\\Users\\dell\\Desktop\\result1")
+def compute_time(path):
+	pack_order = "git verify-pack "
+	for fir in os.listdir(path):
+		fir_dir = os.path.join(path, fir)
+		os.chdir(fir_dir)
+		for root,dirs,files in os.walk(".git\\objects\\pack"):
+			for fn in files:
+				file_name = os.path.join(root, fn)
+				if fn.endswith(".idx"):
+					time = timeit.timeit(stmt=lambda:os.system(pack_order + file_name), number=1)
+					print(fir + "   " + file_name + ':  ' + str(time))
+compute_time("C:\\Users\\dell\\Desktop\\result2")
