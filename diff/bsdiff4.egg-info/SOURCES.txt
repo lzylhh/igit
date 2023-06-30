@@ -1,6 +1,4 @@
 LICENSE
-MANIFEST.in
-README.rst
 setup.py
 bsdiff4/__init__.py
 bsdiff4/cli.py

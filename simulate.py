@@ -107,7 +107,7 @@ def test(path):
     plt.xlabel('Ssdeep similar')
     plt.ylabel('Compression ratio')
     plt.show()
-test("C:\\Users\\dell\\Desktop\\jieba")
+# test("C:\\Users\\dell\\Desktop\\jieba")
 def testpack(path):
     os.chdir(path)
     repo = Repository(".git")

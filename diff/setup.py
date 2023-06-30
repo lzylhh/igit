@@ -18,9 +18,9 @@ kwds['version'] = eval(pat.search(data).group(1))
 
 setup(
     name = "bsdiff4",
-    author = "Ilan Schnell",
-    author_email = "ilanschnell@gmail.com",
-    url = "https://github.com/ilanschnell/bsdiff4",
+    author = "l",
+    author_email = "dw",
+    url = "dd",
     license = "BSD",
     classifiers = [
         "Development Status :: 5 - Production/Stable",
